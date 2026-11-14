@@ -101,14 +101,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Halo, ${auth.currentUser?.name ?? "Admin"} 👋',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                      Expanded(
+                        child: Text(
+                          'Halo, ${auth.currentUser?.name ?? "Admin"} 👋',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
@@ -217,7 +222,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               icon: Icons.fastfood_rounded,
               title: 'Kelola Menu (CRUD Produk)',
               subtitle: 'Tambah, ubah harga, hapus & update stok menu',
-              badge: 'Wajib Penugasan',
+              badge: 'Wajib',
               onTap: () {
                 Navigator.push(
                   context,
@@ -302,9 +307,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        title,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                        ),
                       ),
                       const SizedBox(width: 6),
                       Container(
