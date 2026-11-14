@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/app_network_image.dart';
 import '../../providers/menu_provider.dart';
 import 'admin_add_edit_menu_screen.dart';
 
@@ -75,13 +75,9 @@ class AdminMenuListScreen extends StatelessWidget {
                             child: SizedBox(
                               width: 65,
                               height: 65,
-                              child: CachedNetworkImage(
+                              child: AppNetworkImage(
                                 imageUrl: menu.imageUrl,
                                 fit: BoxFit.cover,
-                                errorWidget: (_, __, ___) => Container(
-                                  color: AppTheme.surfaceContainerLow,
-                                  child: const Icon(Icons.fastfood, color: AppTheme.outline),
-                                ),
                               ),
                             ),
                           ),

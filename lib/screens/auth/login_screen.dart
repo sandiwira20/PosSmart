@@ -15,7 +15,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   String _selectedRole = 'kasir'; // 'kasir' or 'admin'
   final _emailController = TextEditingController(text: 'kasir@possmart.com');
-  final _passwordController = TextEditingController(text: '123456');
+  final _passwordController = TextEditingController(text: 'password123');
   bool _obscurePassword = true;
 
   void _onRoleChanged(String role) {
@@ -49,6 +49,14 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (_) => const KasirPosScreen()),
         );
       }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Login gagal, periksa email dan password.'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
