@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/user_model.dart';
 import '../services/firebase_service.dart';
 
@@ -107,6 +108,16 @@ class AuthProvider with ChangeNotifier {
           avatarUrl: avatar,
         );
         await FirebaseService.usersRef.child(user.uid).set(_currentUser!.toMap());
+      }
+
+      // Simpan FCM Token ke Realtime Database untuk target push notifikasi
+      try {
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null) {
+          await FirebaseService.usersRef.child(user.uid).child('fcmToken').set(fcmToken);
+        }
+      } catch (e) {
+        debugPrint('Save FCM Token error: $e');
       }
 
       _isLoading = false;
