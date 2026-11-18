@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/app_network_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import 'payment_qris_screen.dart';
@@ -150,13 +150,9 @@ class CheckoutScreen extends StatelessWidget {
                         child: SizedBox(
                           width: 50,
                           height: 50,
-                          child: CachedNetworkImage(
+                          child: AppNetworkImage(
                             imageUrl: item.menu.imageUrl,
                             fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => Container(
-                              color: AppTheme.surfaceContainerLow,
-                              child: const Icon(Icons.fastfood, color: AppTheme.outline),
-                            ),
                           ),
                         ),
                       ),

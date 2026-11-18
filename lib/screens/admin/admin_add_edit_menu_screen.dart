@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/app_network_image.dart';
 import '../../models/menu_model.dart';
 import '../../providers/menu_provider.dart';
 
@@ -22,6 +24,7 @@ class _AdminAddEditMenuScreenState extends State<AdminAddEditMenuScreen> {
   late TextEditingController _descController;
   String _category = 'Makanan';
   bool _isAvailable = true;
+  bool _isPickingImage = false;
 
   final List<String> _categories = ['Makanan', 'Minuman', 'Snack', 'Lainnya'];
 
@@ -38,6 +41,42 @@ class _AdminAddEditMenuScreenState extends State<AdminAddEditMenuScreen> {
     _descController = TextEditingController(text: widget.menu?.description ?? '');
     _category = widget.menu?.category ?? 'Makanan';
     _isAvailable = widget.menu?.isAvailable ?? true;
+  }
+
+  /// Memilih foto dari File Manager / Galeri Komputer atau HP
+  Future<void> _pickImage() async {
+    try {
+      setState(() => _isPickingImage = true);
+      final picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 600,
+        maxHeight: 600,
+        imageQuality: 80,
+      );
+
+      if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
+        final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+        setState(() {
+          _imageController.text = base64String;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memilih foto: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingImage = false);
+      }
+    }
   }
 
   Future<void> _saveMenu() async {
@@ -78,7 +117,8 @@ class _AdminAddEditMenuScreenState extends State<AdminAddEditMenuScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.menu == null ? 'Menu baru ditambahkan!' : 'Menu berhasil diupdate!'),
+          content: Text(widget.menu == null ? 'Menu baru berhasil ditambahkan ke Firebase!' : 'Menu berhasil diupdate!'),
+          backgroundColor: AppTheme.success,
         ),
       );
       Navigator.pop(context);
@@ -101,38 +141,86 @@ class _AdminAddEditMenuScreenState extends State<AdminAddEditMenuScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image Preview Card
+              // Image Preview Card (Bisa diklik untuk pilih file)
               Center(
                 child: Column(
                   children: [
-                    Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppTheme.primaryLight, width: 2),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
-                        child: CachedNetworkImage(
-                          imageUrl: _imageController.text,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => const Center(
-                            child: Icon(Icons.add_a_photo_outlined, size: 40, color: AppTheme.outline),
+                    InkWell(
+                      onTap: _isPickingImage ? null : _pickImage,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: 140,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppTheme.primaryLight, width: 2),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(18),
+                              child: AppNetworkImage(
+                                imageUrl: _imageController.text,
+                                fit: BoxFit.cover,
+                                errorWidget: const Center(
+                                  child: Icon(Icons.add_a_photo_outlined, size: 40, color: AppTheme.outline),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                          if (_isPickingImage)
+                            Container(
+                              width: 140,
+                              height: 140,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(color: Colors.white),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Preview Foto Produk',
-                      style: TextStyle(fontSize: 12, color: AppTheme.outline),
+                    const SizedBox(height: 10),
+
+                    // Tombol Choose File / Pilih Foto dari Galeri
+                    ElevatedButton.icon(
+                      onPressed: _isPickingImage ? null : _pickImage,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.file_upload_outlined, size: 18),
+                      label: const Text(
+                        'Pilih Foto dari Komputer / HP (Choose File)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Garis Pemisah
+                    Row(
+                      children: [
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            'atau masukkan link URL foto di bawah',
+                            style: TextStyle(fontSize: 11, color: AppTheme.outline),
+                          ),
+                        ),
+                        const Expanded(child: Divider()),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
 
               // Image URL input
               const Text('URL Foto Produk', style: TextStyle(fontWeight: FontWeight.w700)),
@@ -141,7 +229,7 @@ class _AdminAddEditMenuScreenState extends State<AdminAddEditMenuScreen> {
                 controller: _imageController,
                 onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(
-                  hintText: 'https://...',
+                  hintText: 'https://... atau otomatis terisi dari tombol Pilih Foto',
                   prefixIcon: Icon(Icons.link, color: AppTheme.outline),
                 ),
               ),

@@ -1,14 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
+import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/menu_provider.dart';
 import 'providers/cart_provider.dart';
 import 'screens/splash_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inisialisasi Firebase dengan dukungan multiplatform (Android, Web, Windows)
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    // Inisialisasi Layanan Notifikasi FCM & Realtime Trigger
+    await NotificationService.initialize();
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
 
   // Set status bar style
   SystemChrome.setSystemUIOverlayStyle(

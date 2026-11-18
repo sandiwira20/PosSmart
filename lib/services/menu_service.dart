@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_database/firebase_database.dart';
 import '../models/menu_model.dart';
+import 'firebase_service.dart';
 
 class MenuService {
-  // Initial demo menus based on Stitch design & Indonesian UMKM favorites
+  // Menu contoh awal untuk auto-seeding jika database masih kosong
   static final List<MenuModel> _demoMenus = [
     MenuModel(
       id: 'menu-1',
@@ -60,59 +62,111 @@ class MenuService {
     ),
   ];
 
-  static List<MenuModel> _localMenus = List.from(_demoMenus);
-
-  // Read
+  /// Mengambil daftar menu dari Firebase Realtime Database
+  /// Jika database masih kosong, otomatis melakukan seeding menu contoh awal
   static Future<List<MenuModel>> getMenus() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.from(_localMenus);
+    try {
+      final snapshot = await FirebaseService.menusRef.get();
+      if (!snapshot.exists || snapshot.value == null) {
+        // Database masih kosong, lakukan auto-seeding ke Firebase
+        await _seedInitialMenus();
+        return List.from(_demoMenus);
+      }
+
+      final data = snapshot.value;
+      final List<MenuModel> menus = [];
+
+      if (data is Map) {
+        data.forEach((key, val) {
+          if (val is Map) {
+            menus.add(MenuModel.fromMap(val, key.toString()));
+          }
+        });
+      } else if (data is List) {
+        for (int i = 0; i < data.length; i++) {
+          if (data[i] != null && data[i] is Map) {
+            menus.add(MenuModel.fromMap(data[i] as Map, 'menu-$i'));
+          }
+        }
+      }
+
+      return menus;
+    } catch (e) {
+      debugPrint('Error getting menus from Firebase: $e');
+      return List.from(_demoMenus);
+    }
   }
 
-  // Create
+  /// Stream realtime untuk memantau perubahan menu secara live
+  static Stream<List<MenuModel>> streamMenus() {
+    return FirebaseService.menusRef.onValue.map((event) {
+      final snapshot = event.snapshot;
+      if (!snapshot.exists || snapshot.value == null) {
+        return <MenuModel>[];
+      }
+
+      final data = snapshot.value;
+      final List<MenuModel> menus = [];
+
+      if (data is Map) {
+        data.forEach((key, val) {
+          if (val is Map) {
+            menus.add(MenuModel.fromMap(val, key.toString()));
+          }
+        });
+      }
+      return menus;
+    });
+  }
+
+  /// Tambah Menu Baru ke Firebase Realtime Database
   static Future<bool> addMenu(MenuModel menu) async {
     try {
-      _localMenus.add(menu);
+      final newRef = FirebaseService.menusRef.push();
+      final key = newRef.key ?? 'menu-${DateTime.now().millisecondsSinceEpoch}';
+
+      final menuData = menu.toMap();
+      await newRef.set(menuData);
       return true;
     } catch (e) {
-      debugPrint('Error adding menu: $e');
+      debugPrint('Error adding menu to Firebase: $e');
       return false;
     }
   }
 
-  // Update
+  /// Update Menu yang sudah ada di Firebase
   static Future<bool> updateMenu(MenuModel updatedMenu) async {
     try {
-      final index = _localMenus.indexWhere((m) => m.id == updatedMenu.id);
-      if (index != -1) {
-        _localMenus[index] = updatedMenu;
-        return true;
-      }
-      return false;
+      await FirebaseService.menusRef
+          .child(updatedMenu.id)
+          .update(updatedMenu.toMap());
+      return true;
     } catch (e) {
-      debugPrint('Error updating menu: $e');
+      debugPrint('Error updating menu in Firebase: $e');
       return false;
     }
   }
 
-  // Delete
+  /// Hapus Menu dari Firebase
   static Future<bool> deleteMenu(String id) async {
     try {
-      _localMenus.removeWhere((m) => m.id == id);
+      await FirebaseService.menusRef.child(id).remove();
       return true;
     } catch (e) {
-      debugPrint('Error deleting menu: $e');
+      debugPrint('Error deleting menu in Firebase: $e');
       return false;
     }
   }
 
-  // Toggle availability
-  static Future<bool> toggleAvailability(String id) async {
-    final index = _localMenus.indexWhere((m) => m.id == id);
-    if (index != -1) {
-      final current = _localMenus[index];
-      _localMenus[index] = current.copyWith(isAvailable: !current.isAvailable);
-      return true;
+  /// Helper untuk inisialisasi data awal (seeding)
+  static Future<void> _seedInitialMenus() async {
+    try {
+      for (final menu in _demoMenus) {
+        await FirebaseService.menusRef.child(menu.id).set(menu.toMap());
+      }
+      debugPrint('Initial demo menus seeded to Firebase successfully.');
+    } catch (e) {
+      debugPrint('Error seeding initial menus: $e');
     }
-    return false;
   }
 }

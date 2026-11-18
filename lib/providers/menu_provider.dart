@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/menu_model.dart';
 import '../services/menu_service.dart';
@@ -7,6 +8,7 @@ class MenuProvider with ChangeNotifier {
   bool _isLoading = false;
   String _selectedCategory = 'all';
   String _searchQuery = '';
+  StreamSubscription<List<MenuModel>>? _menuSubscription;
 
   List<MenuModel> get menus => _menus;
   bool get isLoading => _isLoading;
@@ -21,6 +23,20 @@ class MenuProvider with ChangeNotifier {
           menu.name.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     }).toList();
+  }
+
+  MenuProvider() {
+    _initRealtimeListener();
+  }
+
+  /// Pasang Realtime Listener ke Firebase Realtime Database
+  void _initRealtimeListener() {
+    _menuSubscription = MenuService.streamMenus().listen((liveMenus) {
+      if (liveMenus.isNotEmpty) {
+        _menus = liveMenus;
+        notifyListeners();
+      }
+    });
   }
 
   Future<void> fetchMenus() async {
@@ -66,8 +82,9 @@ class MenuProvider with ChangeNotifier {
     return success;
   }
 
-  Future<void> toggleAvailability(String id) async {
-    await MenuService.toggleAvailability(id);
-    await fetchMenus();
+  @override
+  void dispose() {
+    _menuSubscription?.cancel();
+    super.dispose();
   }
 }
