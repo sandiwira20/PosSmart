@@ -59,7 +59,7 @@ class NotificationService {
       );
 
       await _localNotifications.initialize(
-        initSettings,
+        settings: initSettings,
         onDidReceiveNotificationResponse: (response) {
           debugPrint('Notification clicked: ${response.payload}');
         },
@@ -82,7 +82,8 @@ class NotificationService {
 
       // 4. Listen pesan FCM saat aplikasi di Foreground
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('FCM Foreground message received: ${message.notification?.title}');
+        debugPrint(
+            'FCM Foreground message received: ${message.notification?.title}');
         if (message.notification != null) {
           showNotification(
             title: message.notification!.title ?? 'PosSmart',
@@ -92,7 +93,8 @@ class NotificationService {
       });
 
       // 5. Background Handler
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
 
       // 6. Jalankan Realtime Listener Database untuk Notifikasi Otomatis
       _startRealtimeTriggers();
@@ -122,18 +124,21 @@ class NotificationService {
     const notificationDetails = NotificationDetails(android: androidDetails);
 
     final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    await _localNotifications.show(id, title, body, notificationDetails);
+    await _localNotifications.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: notificationDetails,
+    );
   }
 
   /// Realtime Listener Otomatis sesuai permintaan penugasan:
   /// 1. Pembayaran Lunas MiomiPay -> Notifikasi ke Kasir
   /// 2. Admin Tambah/Update Menu -> Notifikasi ke Kasir
   static void _startRealtimeTriggers() {
-    // -------------------------------------------------------------------------
     // FITUR 1: Notifikasi Pembayaran Lunas ke Kasir
-    // Ketika transaksi berubah menjadi PAID, notifikasi langsung muncul otomatis!
-    // -------------------------------------------------------------------------
-    _transactionSub = FirebaseService.transactionsRef.onChildChanged.listen((event) {
+    _transactionSub =
+        FirebaseService.transactionsRef.onChildChanged.listen((event) {
       final snapshot = event.snapshot;
       if (snapshot.value != null && snapshot.value is Map) {
         final data = Map<dynamic, dynamic>.from(snapshot.value as Map);
@@ -148,22 +153,21 @@ class NotificationService {
 
           showNotification(
             title: 'Pembayaran Berhasil! 💰',
-            body: 'Tagihan #$invoice sebesar $amountText telah Lunas via MiomiPay.',
+            body:
+                'Tagihan #$invoice sebesar $amountText telah Lunas via MiomiPay.',
           );
         }
       }
     });
 
-    // -------------------------------------------------------------------------
     // FITUR 2: Notifikasi Update Menu dari Admin ke Kasir
-    // Ketika Admin mengupdate harga atau nama menu
-    // -------------------------------------------------------------------------
     _menuUpdateSub = FirebaseService.menusRef.onChildChanged.listen((event) {
       final snapshot = event.snapshot;
       if (snapshot.value != null && snapshot.value is Map) {
         final data = Map<dynamic, dynamic>.from(snapshot.value as Map);
         final name = data['name'] ?? 'Menu';
-        final priceNum = (data['price'] is num) ? (data['price'] as num).toDouble() : 0.0;
+        final priceNum =
+            (data['price'] is num) ? (data['price'] as num).toDouble() : 0.0;
         final priceText = _currencyFormat.format(priceNum);
 
         showNotification(
@@ -173,7 +177,7 @@ class NotificationService {
       }
     });
 
-    // Tandai load awal selesai setelah 3 detik agar tidak memicu notifikasi untuk menu lama
+    // Tandai load awal selesai agar tidak memicu notifikasi untuk menu lama
     Future.delayed(const Duration(seconds: 4), () {
       _initialMenuLoadComplete = true;
 

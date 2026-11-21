@@ -13,16 +13,26 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi Firebase dengan dukungan multiplatform (Android, Web, Windows)
+  // 1. Inisialisasi Firebase (dilewati jika sudah ada, mis. dari google-services di Android)
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-
-    // Inisialisasi Layanan Notifikasi FCM & Realtime Trigger
-    await NotificationService.initialize();
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') {
+      debugPrint('Firebase initialization error: $e');
+    }
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
+  }
+
+  // 2. Notifikasi dipisah supaya tetap jalan walau langkah Firebase di atas bermasalah
+  try {
+    await NotificationService.initialize();
+  } catch (e) {
+    debugPrint('NotificationService error: $e');
   }
 
   // Set status bar style
